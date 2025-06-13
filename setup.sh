@@ -51,7 +51,3 @@ echo "✅ Done! Glances is now running at: http://$(hostname -I | awk '{print $1
 echo "📋 UFW firewall status:"
 sudo ufw status verbose
 
-# Save this script for GitHub or future reuse
-echo "💾 Saving this setup script to ~/setup_glances.sh..."
-cp $0 ~/setup_glances.sh
-chmod +x ~/setup_glances.sh
