@@ -43,13 +43,19 @@ sudo ufw deny 61208/tcp
 sudo ufw allow from $DASHBOARD_IP to any port 61208 proto tcp
 sudo ufw --force enable
 
-echo "🛡️ Setting iptables rules for Docker (DOCKER-USER chain)..."
-# Xoá rule cũ (nếu có)
-sudo iptables -D DOCKER-USER -p tcp -s $DASHBOARD_IP --dport 61208 -j ACCEPT 2>/dev/null || true
-sudo iptables -D DOCKER-USER -p tcp --dport 61208 -j DROP 2>/dev/null || true
+echo "🛡️ Cleaning up iptables rules in DOCKER-USER chain..."
 
-# Thêm rule mới đúng thứ tự
+# Xoá tất cả rule cũ liên quan đến port 61208 (ACCEPT/DROP/RETURN)
+while sudo iptables -L DOCKER-USER --line-numbers -n | grep -E '61208|RETURN' > /dev/null; do
+  RULE_NUM=$(sudo iptables -L DOCKER-USER --line-numbers -n | grep -E '61208|RETURN' | head -n 1 | awk '{print $1}')
+  sudo iptables -D DOCKER-USER $RULE_NUM
+done
+
+echo "✅ Adding new iptables rules..."
+# Cho phép IP dashboard truy cập
 sudo iptables -I DOCKER-USER -p tcp -s $DASHBOARD_IP --dport 61208 -j ACCEPT
+
+# Chặn tất cả IP khác
 sudo iptables -A DOCKER-USER -p tcp --dport 61208 -j DROP
 
 # Lưu lại iptables
