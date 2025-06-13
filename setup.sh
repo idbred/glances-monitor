@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# :warning: Replace this with your actual dashboard server IP
+# ✅ REPLACE this with your actual dashboard IP
 DASHBOARD_IP="198.7.118.95"
 
-echo "🔧 Installing Docker and Docker Compose..."
+echo "🔧 Installing Docker, Docker Compose, UFW, and iptables-persistent..."
 sudo apt update -y
 sudo apt install -y docker.io docker-compose ufw curl iptables-persistent -y
 
@@ -43,22 +43,22 @@ sudo ufw deny 61208/tcp
 sudo ufw allow from $DASHBOARD_IP to any port 61208 proto tcp
 sudo ufw --force enable
 
-echo "🛡️ Cleaning up iptables rules in DOCKER-USER chain..."
+echo "🔁 Resetting and securing iptables DOCKER-USER chain..."
 
-# Xoá tất cả rule cũ liên quan đến port 61208 (ACCEPT/DROP/RETURN)
-while sudo iptables -L DOCKER-USER --line-numbers -n | grep -E '61208|RETURN' > /dev/null; do
-  RULE_NUM=$(sudo iptables -L DOCKER-USER --line-numbers -n | grep -E '61208|RETURN' | head -n 1 | awk '{print $1}')
-  sudo iptables -D DOCKER-USER $RULE_NUM
-done
+# Flush toàn bộ DOCKER-USER rules (xóa ACCEPT, DROP, RETURN cũ)
+sudo iptables -F DOCKER-USER
 
-echo "✅ Adding new iptables rules..."
-# Cho phép IP dashboard truy cập
+# Đảm bảo DOCKER-USER được gọi trong chain FORWARD
+sudo iptables -D FORWARD -j DOCKER-USER 2>/dev/null || true
+sudo iptables -I FORWARD -j DOCKER-USER
+
+# Thêm rule: chỉ cho phép DASHBOARD_IP truy cập port 61208
 sudo iptables -I DOCKER-USER -p tcp -s $DASHBOARD_IP --dport 61208 -j ACCEPT
 
-# Chặn tất cả IP khác
+# Chặn tất cả các IP khác vào port 61208
 sudo iptables -A DOCKER-USER -p tcp --dport 61208 -j DROP
 
-# Lưu lại iptables
+echo "💾 Saving iptables rules..."
 sudo netfilter-persistent save
 
 echo "✅ Setup complete!"
