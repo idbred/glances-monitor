@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # :warning: Replace this with your actual dashboard server IP
-DASHBOARD_IP="203.0.113.10"  # ← REPLACE this with your actual IP
+DASHBOARD_IP="198.7.118.95"  # ← REPLACE this with your actual IP
 
 echo "🔧 Installing Docker and Docker Compose..."
 sudo apt update -y
